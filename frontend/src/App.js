@@ -1,16 +1,23 @@
 import React from 'react'; 
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'; 
-import Home from './pages/Home';
-import About from './pages/About';
-import Contact from './pages/Contact';
+
+import LandingPage from './pages/LandingPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import Dashboard from './pages/Dashboard';
+
+import './App.css'
+
+
 
 function App() {
   return (
     <Router>
       <Routes> {/* Use Routes instead of Switch */}
-        <Route path="/" element={<Home />} /> {/* Use element prop instead of component */}
-        <Route path="/about" element={<About />} />
-        <Route path="/contact" element={<Contact />} />
+        <Route path="/" element={<LandingPage/>} /> {/* Use element prop instead of component */}
+        <Route path="/signup" element={<RegisterPage/>} />
+        <Route path="/signin" element={<LoginPage />} />
+        <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </Router>
   );
