@@ -7,6 +7,7 @@ import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
 
 import './App.css'
+import CreatePost from './pages/CreatePost';
 
 
 
@@ -18,6 +19,7 @@ function App() {
         <Route path="/signup" element={<RegisterPage/>} />
         <Route path="/signin" element={<LoginPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/createpost" element={<CreatePost/>} />
       </Routes>
     </Router>
   );
