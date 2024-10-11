@@ -7,3 +7,5 @@ db.sqlite3
 *.env
 new_venv/
 django/
+*.key
+new_venv/
