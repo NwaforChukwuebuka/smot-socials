@@ -24,3 +24,7 @@ yarn-error.log*
 
 credentials.json
 dist
+
+# Ignore SSH keys
+~/.ssh/id_rsa
+~/.ssh/id_rsa.pub
