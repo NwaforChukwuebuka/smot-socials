@@ -149,8 +149,4 @@ const Dashboard = () => {
     );
 };
 
-<<<<<<< HEAD
 export default Dashboard;
-=======
-export default Dashboard;
->>>>>>> bb6916a9735712231a6fbfdeaf92c97f7f53f0cd
