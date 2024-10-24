@@ -1,34 +1,64 @@
-from decouple import config
 from pathlib import Path
+from decouple import config, Csv
 import os
-
+import logging
+logging.basicConfig(level=logging.DEBUG)
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load environment variables from .env file
+
+logging.basicConfig(level=logging.DEBUG)
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config('SECRET_KEY')
-DEBUG = config('DEBUG', default=False, cast=bool)
-SOCIAL_AUTH_TWITTER_CALLBACK_URL = 'http://localhost:8000/social-auth/complete/twitter/'
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
-# CORS and CSRF settings
-CORS_ALLOW_CREDENTIALS = True
-CSRF_TRUSTED_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000']
-CSRF_COOKIE_NAME = "csrftoken"
-CSRF_HEADER_NAME = "HTTP_X_CSRFTOKEN"
-CSRF_COOKIE_HTTPONLY = False
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = config('DEBUG', default=True, cast=bool)
 
-CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:3000",  # frontend URL
-    "http://localhost:3000",
-]
+# Allowing hosts to come from a CSV environment variable
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
-CORS_ALLOW_HEADERS = [
-    'Authorization',
-    'Content-Type',
-    'X-CSRFToken',
-]
+LOGIN_URL = '/accounts/login/'  # URL to redirect if user is not logged in
+LOGIN_REDIRECT_URL = '/dashboard'  # Where to redirect after successful login
+LOGOUT_REDIRECT_URL = '/'
 
-LOGIN_REDIRECT_URL = 'http://127.0.0.1:3000/dashboard/'
+# LinkedIn OAuth2
+SOCIAL_AUTH_LINKEDIN_OAUTH2_KEY = config('SOCIAL_AUTH_LINKEDIN_OAUTH2_KEY')
+SOCIAL_AUTH_LINKEDIN_OAUTH2_SECRET = config('SOCIAL_AUTH_LINKEDIN_OAUTH2_SECRET')
+SOCIAL_AUTH_LINKEDIN_OAUTH2_SCOPE = ['openid', 'w_member_social', 'email', 'profile']
+SOCIAL_AUTH_LINKEDIN_OAUTH2_REDIRECT_URI = 'http://localhost:8000/social/auth/complete/linkedin/'
+SOCIAL_AUTH_LINKEDIN_OAUTH2_AUTHORIZATION_URL = 'https://www.linkedin.com/oauth/v2/authorization'
+SOCIAL_AUTH_LINKEDIN_OAUTH2_ACCESS_TOKEN_URL = 'https://www.linkedin.com/oauth/v2/accessToken'
+SOCIAL_AUTH_LINKEDIN_OAUTH2_USERINFO_URL = 'https://api.linkedin.com/v2/userinfo'
+SOCIAL_AUTH_LINKEDIN_OAUTH2_EXTRA_DATA = ['sub']
+
+# Twitter OAuth
+SOCIAL_AUTH_TWITTER_KEY = config('SOCIAL_AUTH_TWITTER_KEY')
+SOCIAL_AUTH_TWITTER_SECRET = config('SOCIAL_AUTH_TWITTER_SECRET')
+SOCIAL_AUTH_TWITTER_REDIRECT_URI = 'http://localhost:8000/social/twitter/callback/'
+
+
+AUTHENTICATION_BACKENDS = (
+     'django.contrib.auth.backends.ModelBackend',
+    'social_integration.backends.CustomLinkedinOAuth2',  # Use the actual path to your custom backend
+    'social_core.backends.twitter.TwitterOAuth',
+   
+)
+# Application definition
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('DATABASE_NAME'),
+        'USER': config('DATABASE_USER'),
+        'PASSWORD': config('DATABASE_PASSWORD'),
+        'HOST': config('DATABASE_HOST'),
+        'PORT': config('DATABASE_PORT', default=''),  # Default to empty string if not set
+    }
+}
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -37,7 +67,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'corsheaders',
     'core',
     'accounts',
     'social_integration',
@@ -45,81 +74,46 @@ INSTALLED_APPS = [
     'analytics',
     'subscription',
     'dashboard',
-    'django.contrib.sites',
-    'rest_framework',
-    'rest_framework.authtoken',
-    'dj_rest_auth',
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
-    'allauth.socialaccount.providers.google',
-    'dj_rest_auth.registration',
-    'rest_framework_social_oauth2',
-    'oauth2_provider',
     'social_django',
 ]
 
-SITE_ID = 1
 
-# Authentication backends
-AUTHENTICATION_BACKENDS = (
-    'rest_framework_social_oauth2.backends.DjangoOAuth2',
-    'django.contrib.auth.backends.ModelBackend',
-    'social_core.backends.twitter.TwitterOAuth',
-    # Uncomment these if needed
-    # 'social_core.backends.facebook.FacebookOAuth2',
-    # 'social_core.backends.instagram.InstagramOAuth2',
+SOCIAL_AUTH_PIPELINE = (
+    'social_core.pipeline.social_auth.social_details',
+    'social_core.pipeline.social_auth.social_uid',
+    'social_core.pipeline.social_auth.auth_allowed',
+    'social_core.pipeline.social_auth.social_user',
+    'social_core.pipeline.user.get_username',
+    'social_core.pipeline.user.create_user',
+    'social_core.pipeline.social_auth.associate_user',
+    'social_core.pipeline.social_auth.load_extra_data',
+    'social_core.pipeline.user.user_details',
+    'social_core.pipeline.social_auth.associate_user',
+    'social_core.pipeline.social_auth.load_extra_data',
+    'social_integration.pipeline.save_twitter_token',
 )
 
-# Social account providers settings (from .env)
-SOCIALAPP_PROVIDERS = {
-    'google': {
-        'CLIENT_ID': config('GOOGLE_CLIENT_ID'),
-        'SECRET': config('GOOGLE_CLIENT_SECRET'),
-        'AUTH_ENTRY_POINT': 'https://accounts.google.com/o/oauth2/auth',
-        'PROVIDER': 'google',
-        'SCOPE': [
-            'profile',
-            'email',
-        ],
-    }
-}
 
-# OAuth configuration
-SOCIAL_AUTH_TWITTER_KEY = config('SOCIAL_AUTH_TWITTER_KEY')
-SOCIAL_AUTH_TWITTER_SECRET = config('SOCIAL_AUTH_TWITTER_SECRET')
-
-# Rest framework settings
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
-        # Uncomment if using session authentication as well
-        # 'rest_framework.authentication.SessionAuthentication',
-    ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ]
-}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'allauth.account.middleware.AccountMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
     'social_django.middleware.SocialAuthExceptionMiddleware',
 ]
 
-ROOT_URLCONF = 'smot.urls'
+ROOT_URLCONF = 'evin.urls'
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR / 'build', 'templates')],
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -132,51 +126,46 @@ TEMPLATES = [
     },
 ]
 
-# Static file settings
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'frontend/build/static'),
-]
-
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-WSGI_APPLICATION = 'smot.wsgi.application'
-
-
-# Database settings
+WSGI_APPLICATION = 'evin.wsgi.application'
 
 
 # Database
-# https://docs.djangoproject.com/en/3.2/ref/settings/#databases
+# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-# Use the .env values
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-default-key-for-dev')
-DEBUG = config('DEBUG', default=False, cast=bool)
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default='smot'),
-        'USER': config('DB_USER', default='admin'),
-        'PASSWORD': config('DB_PASSWORD', default='pass123'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5434'),
-    }
-}
 
-# Default primary key field type
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# Password validation
+# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
-# Additional settings for OAuth and social authentication
-SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'http://localhost:8000/accounts/google/login/callback/'
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
 
-# Static and media settings for production (if necessary)
-if not DEBUG:
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
-    SECURE_REFERRER_POLICY = 'strict-origin'
 
+# Internationalization
+# https://docs.djangoproject.com/en/5.1/topics/i18n/
+
+LANGUAGE_CODE = 'en-us'
+
+TIME_ZONE = 'UTC'
+
+USE_I18N = True
+
+USE_TZ = True

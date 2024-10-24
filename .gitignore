@@ -7,7 +7,6 @@ db.sqlite3
 *.env
 node_modules
 node_modules
-
 new_venv/
 django/
 *.key
