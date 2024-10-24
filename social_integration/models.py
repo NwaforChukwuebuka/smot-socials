@@ -27,3 +27,21 @@ class SocialMediaPost(models.Model):
 
     def __str__(self):
         return f"Post {self.post.id} on {self.social_media_account.platform_name} - Status: {self.post_status}"
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    twitter_token = models.CharField(max_length=255, blank=True, null=True)
+    twitter_token_secret = models.CharField(max_length=255, blank=True, null=True)
+
+    def __str__(self):
+        return self.user.username
+
+# Signal to create a UserProfile automatically when a User is created
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    instance.userprofile.save()
