@@ -157,7 +157,7 @@
 				'animating': [ 'busy' ],
 				'dragging': [ 'interacting' ]
 			}
-		}
+		};
 
 		$.each([ 'onResize', 'onThrottledResize' ], $.proxy(function(i, handler) {
 			this._handlers[handler] = $.proxy(this[handler], this);
