@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% if form_type == 'login' %}Login{% else %}Register{% endif %}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h2>{% if form_type == 'login' %}Login{% else %}Register{% endif %}</h2>
+        
+        <form method="post" action="{% url form_type %}">
+            {% csrf_token %}
+            {{ form.as_p }}
+
+            <button type="submit">
+                {% if form_type == 'login' %}Login{% else %}Register{% endif %}
+            </button>
+        </form>
+
+        {% if form_type == 'login' %}
+            <p>Don't have an account? <a href="{% url 'user_register' %}">Register here</a></p>
+        {% else %}
+            <p>Already have an account? <a href="{% url 'user_login' %}">Login here</a></p>
+        {% endif %}
+    </div>
+</body>
+</html>

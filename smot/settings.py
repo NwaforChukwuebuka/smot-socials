@@ -142,15 +142,25 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 WSGI_APPLICATION = 'smot.wsgi.application'
 
+
 # Database settings
+
+
+# Database
+# https://docs.djangoproject.com/en/3.2/ref/settings/#databases
+
+# Use the .env values
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-default-key-for-dev')
+DEBUG = config('DEBUG', default=False, cast=bool)
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST'),
-        'PORT': config('DB_PORT'),
+        'NAME': config('DB_NAME', default='smot'),
+        'USER': config('DB_USER', default='admin'),
+        'PASSWORD': config('DB_PASSWORD', default='pass123'),
+        'HOST': config('DB_HOST', default='localhost'),
+        'PORT': config('DB_PORT', default='5434'),
     }
 }
 
