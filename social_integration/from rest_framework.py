@@ -29,37 +29,34 @@ class UserConnectionsView(APIView):
             'facebook': facebook_connected,
             'instagram': instagram_connected,
         })
+        
 
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def post_to_twitter(request):
     user = request.user
-    media = request.FILES.get('media')  # Accepting media file only
+    tweet_content = request.data.get('tweet')
 
-    if not media:
-        return Response({"error": "Media file is required."}, status=status.HTTP_400_BAD_REQUEST)
+    if not tweet_content:
+        return Response({"error": "Tweet content is required."}, status=status.HTTP_400_BAD_REQUEST)
 
+    # Assuming you have a model that stores the social auth data
     try:
-        # Get Twitter credentials from user's social auth
+        # Assuming user has related model `social_auth` with stored tokens
         twitter_user = user.social_auth.get(provider='twitter')
+        # Access the nested access_token dictionary
         access_token_data = twitter_user.extra_data.get('access_token', {})
         access_token = access_token_data.get('oauth_token')
         access_token_secret = access_token_data.get('oauth_token_secret')
 
-        # Authenticate with Twitter
-        auth = tweepy.OAuthHandler(settings.SOCIAL_AUTH_TWITTER_KEY, settings.SOCIAL_AUTH_TWITTER_SECRET)
+        auth = tweepy.OAuthHandler(SOCIAL_AUTH_TWITTER_KEY,SOCIAL_AUTH_TWITTER_SECRET )  # Use your Twitter app credentials
         auth.set_access_token(access_token, access_token_secret)
         api = tweepy.API(auth)
-
-        # Use Tweepy's media_upload to post the media
-        media_upload = api.media_upload(filename=media.name, file=media)
-
-        # Post the tweet with the uploaded media
-        api.update_status(status='', media_ids=[media_upload.media_id])  # Empty tweet content, media only
-
-        return Response({"success": "Media posted successfully to Twitter."}, status=status.HTTP_200_OK)
-
+        
+        # Post tweet using Tweepy
+        api.update_status(status=tweet_content)
+        return Response({"success": "Tweet posted successfully."}, status=status.HTTP_200_OK)
     except KeyError:
         return Response({"error": "Twitter account not connected."}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:

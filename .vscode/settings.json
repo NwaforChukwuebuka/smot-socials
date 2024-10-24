@@ -3,5 +3,6 @@
         "gmzt",
         "jbmx",
         "smot"
-    ]
+    ],
+    "git.ignoreLimitWarning": true
 }
