@@ -5,11 +5,11 @@ from django.http import HttpResponse
 from .models import SocialMediaAccount
 from django.utils.decorators import method_decorator
 import requests
+import tweepy
 from social_django.models import UserSocialAuth
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from .models import UserProfile
-import tweepy
 from django.conf import settings
 from requests_oauthlib import OAuth1Session
 
