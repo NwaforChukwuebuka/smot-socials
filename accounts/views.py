@@ -1,137 +1,123 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate
-from .forms import LoginForm, RegistrationForm
-
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.authtoken.models import Token
+from django.views import View
+from django.contrib.auth import login
+from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .serializers import UserRegistrationSerializer, UserLoginSerializer, UserProfileSerializer
-from rest_framework.views import APIView
-from rest_framework.authtoken.views import ObtainAuthToken
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from allauth.socialaccount.models import SocialAccount
-from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
-from dj_rest_auth.registration.views import SocialLoginView
-from django.shortcuts import redirect
-from django.http import JsonResponse
-from django.middleware.csrf import get_token
+from django.utils.decorators import method_decorator
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth import authenticate, logout
+from django.views.generic import TemplateView
+from .forms import UserUpdateForm  # creates a form for user update
+from django.contrib import messages
+from django.contrib.auth import get_backends
 
 
-def token(request):
-    # Your view logic here
-    return render(request, 'token.html')
-def authorize(request):
-    # Handle Google OAuth2 authorization here
-    return redirect('dashboard') 
-
-class GoogleLogin(SocialLoginView):
-    adapter_class = GoogleOAuth2Adapter
-
-def get_csrf_token(request):
-    token = get_token(request)
-    return JsonResponse({'csrfToken': token})
-
-# Registration View
-class RegisterView(APIView):
-    """
-    API view to handle user registration.
-    """
-    permission_classes = [AllowAny]
-    serializer_class = UserRegistrationSerializer  # Add this line
-
-    def post(self, request, *args, **kwargs):
-        print(request.data)  # Print the incoming data
-        serializer = self.serializer_class(data=request.data)  # Now this works
-        if serializer.is_valid():
-            user = serializer.save(request)  # Save the user and get the user object
-            user.refresh_from_db()  # Refresh the user instance from the database to ensure it's saved
-            
-            # Now create the token after the user is saved
-            token, created = Token.objects.get_or_create(user=user)
-            
-            return Response({
-                'user': UserProfileSerializer(user).data,
-                'token': token.key
-            }, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-
-
-
-# Login View
-class LoginView(ObtainAuthToken):
-    """
-    API view to handle user login and token generation.
-    """
-    permission_classes = [AllowAny]
-    serializer_class = UserLoginSerializer
-
-    def post(self, request, *args, **kwargs):
-        """
-        Handle POST request for user login.
-        """
-        serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid():
-            return Response({
-                'user': UserProfileSerializer(serializer.validated_data['user']).data,
-                'token': serializer.validated_data['token']
-            }, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-# User Profile View
-class UserProfileView(APIView):
-    """
-    API view to retrieve the authenticated user's profile.
-    """
-    permission_classes = [IsAuthenticated]
+# Signup view
+class SignupView(View):
+    template_name = 'signup.html'
 
     def get(self, request):
-        """
-        Handle GET request to retrieve the authenticated user's profile.
-        """
+        return render(request, self.template_name)
+
+    def post(self, request):
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        confirm_password = request.POST.get('confirm_password')
+
+        # Basic validation for password confirmation
+        if password != confirm_password:
+            form_error = "Passwords do not match."
+            return render(request, self.template_name, {'form_error': form_error})
+
+        # Create user using the User model
+        user = User.objects.create_user(
+            username=username,
+            password=password,
+            email=email,
+            first_name=first_name,
+            last_name=last_name
+        )
+        user.save()
+
+        # Specify the backend for login
+        backend = get_backends()[0]  # This will use the first configured backend, usually 'ModelBackend'
+        user.backend = f'{backend.__module__}.{backend.__class__.__name__}'  # Set backend explicitly
+
+        login(request, user)  # Log the user in after signing up
+        return redirect('login')  # Redirect to profile or any desired page
+
+
+
+
+class LoginView(View):
+    template_name = 'login.html'
+
+    def get(self, request):
+        form = AuthenticationForm()
+        return render(request, self.template_name, {'form': form})
+
+    def post(self, request):
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+
+        # Try to get the user by email
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            user = None
+
+        if user is not None:
+            # Authenticate with the username and password
+            user = authenticate(username=user.username, password=password)
+            if user is not None:
+                login(request, user)
+                messages.success(request, 'Logged in successfully!')  # Success message
+                return redirect('dashboard')  # Redirect to profile after login
+            else:
+                messages.error(request, 'Invalid password.')  # Invalid password message
+        else:
+            messages.error(request, 'Invalid email.')  # Invalid email message
+
+        # If authentication fails, recreate the form to pass it back to the template
+        form = AuthenticationForm(data=request.POST)
+        return render(request, self.template_name, {'form': form})
+
+# Profile view (requires login)
+@method_decorator(login_required, name='dispatch')
+class ProfileView(TemplateView):
+    template_name = 'profile.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.request.user  # Pass the logged-in user to the template
+        return context
+
+
+
+@method_decorator(login_required, name='dispatch')
+class EditProfileView(View):
+    template_name = 'edit_profile.html'
+
+    def get(self, request):
         user = request.user
-        serializer = UserProfileSerializer(user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        form = UserUpdateForm(instance=user)  # Use the form with existing user data
+        return render(request, self.template_name, {'form': form})
+
+    def post(self, request):
+        user = request.user
+        form = UserUpdateForm(request.POST, instance=user)
+        if form.is_valid():
+            form.save()  # Save the updated user details
+            return redirect('profile')  # Redirect to profile after saving
+        return render(request, self.template_name, {'form': form})
 
 
-
-# Logout View
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
+# Logout view (simple redirect after logging out)
 def logout_view(request):
-    """
-    API view to handle user logout by deleting the authentication token.
-    """
-    request.user.auth_token.delete()
-    return Response({'message': 'Successfully logged out.'}, status=status.HTTP_200_OK)
-
-def user_login(request):
-    if request.method == 'POST':
-        form = LoginForm(request, data=request.POST)
-        if form.is_valid():
-            user = form.get_user()
-            login(request, user)
-            return redirect('home')  # Redirect to the home page after login
-    else:
-        form = LoginForm()
-    return render(request, 'accounts/index.html', {'form': form, 'form_type': 'login'})
-
-def user_register(request):
-    if request.method == 'POST':
-        form = RegistrationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            login(request, user)
-            return redirect('home')  # Redirect to the home page after registration
-    else:
-        form = RegistrationForm()
-    return render(request, 'accounts/index.html', {'form': form, 'form_type': 'register'})
-
+    logout(request)
+    return redirect('/')  # Redirect to login after logout
