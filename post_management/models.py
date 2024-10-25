@@ -11,4 +11,4 @@ class Post(models.Model):
     updated_at = models.DateTimeField(auto_now=True)  # Timestamp when the post is last updated
 
     def __str__(self):
-        return f"Post by {self.user.username} at {self.created_at}"
+        return f"Post by {self.user.username} at {self.created_at}
