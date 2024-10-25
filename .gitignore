@@ -5,7 +5,10 @@ venv/
 db.sqlite3
 *.log
 *.env
+node_modules
+node_modules
 new_venv/
 django/
 *.key
 new_venv/
+
