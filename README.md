@@ -71,21 +71,7 @@ cd smot-socials
    python manage.py runserver
    ```
 
-## 3. Set Up the React Frontend
-
-1. Navigate to the frontend directory and install Node.js dependencies:
-   ```bash
-   cd frontend
-   npm install
-   ```
-
-2. Start the React development server:
-   ```bash
-   npm start
-   ```
-   The React app will run on `http://localhost:3000`.
-
-## 4. Set Up Environment Variables
+## 3. Set Up Environment Variables
 
 1. Install `python-decouple`:
    ```bash
